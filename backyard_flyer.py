@@ -29,7 +29,7 @@ class BackyardFlyer(Drone):
 
         # initial state
         self.flight_state = States.MANUAL
-
+        # Register all the callbacks
         self.register_callback(MsgID.LOCAL_POSITION, self.local_position_callback)
         self.register_callback(MsgID.LOCAL_VELOCITY, self.velocity_callback)
         self.register_callback(MsgID.STATE, self.state_callback)
@@ -46,18 +46,23 @@ class BackyardFlyer(Drone):
                 self.waypoint_transition()
 
         elif self.flight_state == States.WAYPOINT:
-            if np.linalg.norm(self.target_position[0:2] - self.local_position[0:2]) < 1.0:
+            """ Check that the distance between target location and current location of the drone
+             is within a threshold """
+            if np.linalg.norm(self.target_position[0:2] - self.local_position[0:2]) < 0.80:
+                # Iterate till all the way points are finished.
                 if len(self.all_waypoints) > 0:
                     self.waypoint_transition()
                 else:
-                    if np.linalg.norm(self.local_velocity[0:2]) < 1.0:
+                    # Land once all the waypoints are finished.
+                    if np.linalg.norm(self.local_velocity[0:2]) < 0.75:
                         self.landing_transition()
 
 
     def velocity_callback(self):
         if self.flight_state == States.LANDING:
-            if ((self.global_position[2] - self.global_home[2] < 0.1) and
-                    abs(self.local_position[2]) < 0.01):
+            # Disarm once it is close to the ground.
+            if ((self.global_position[2] - self.global_home[2] < 0.15) and
+                    abs(self.local_position[2]) < 0.05):
                 self.disarming_transition()
 
 
@@ -74,7 +79,7 @@ class BackyardFlyer(Drone):
 
 
     def calculate_box(self):
-        return [np.array([6.0, 0.0, 3.0]), np.array([6.0, 6.0, 3.0]), np.array([0.0, 6.0, 3.0]), np.array([0.0, 0.0, 3.0])]
+        return [np.array([8.0, 0.0, 3.0]), np.array([8.0, 8.0, 3.0]), np.array([0.0, 8.0, 3.0]), np.array([0.0, 0.0, 3.0])]
 
 
     def arming_transition(self):
@@ -131,8 +136,7 @@ class BackyardFlyer(Drone):
         self.flight_state = States.LANDING
 
     def disarming_transition(self):
-        """TODO: Fill out this method
-        
+        """
         1. Command the drone to disarm
         2. Transition to the DISARMING state
         """
